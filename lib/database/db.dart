@@ -21,7 +21,7 @@ class LlegadaDB {
 
   Future<Database> getDatabaseInstance() async {
     Directory directory = await getApplicationDocumentsDirectory();
-    String path = join(directory.path, "llegadass.db");
+    String path = join(directory.path, "llegadasss.db");
     return await openDatabase(path, version: 4,
         onCreate: (Database db, int version) async {
       await db.execute("CREATE TABLE DatosLlegada ("
@@ -83,7 +83,7 @@ class LlegadaDB {
   resetDB() async {
     final db = await database;
     db.delete("DatosLlegada");
-    db.rawQuery("DROP TABLE DatosLlegada");
+    //db.rawQuery("DROP TABLE DatosLlegada");
   }
 
 //Update

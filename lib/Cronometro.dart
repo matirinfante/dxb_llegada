@@ -8,7 +8,6 @@ import 'package:dxb_llegada/database/db.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:path_provider/path_provider.dart';
-import 'package:quiver/async.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_time_picker_spinner/flutter_time_picker_spinner.dart';
 import 'package:esys_flutter_share/esys_flutter_share.dart';
@@ -42,11 +41,17 @@ class Cronometro extends StatefulWidget {
 
 class CronometroState extends State<Cronometro> {
   final Dependencies dependencies = new Dependencies();
-  int _indexGeneral = 0, _horaLargadaMilli = 0, _currentTime = 0;
-  DateTime _horaActual, _horaLargada;
+  int _indexGeneral = 0, _horaLargadaMilli = 0;
+  DateTime _horaLargada;
   bool _largadaSetted = false;
   ScrollController _controller;
 
+  //verificarDatosCompletos
+  //Funcion dedicada a verificar, desde un snap de la base de datos, si todos los registros estan debidamente completados.
+  //La verificación se realiza como chequeo antes de convertir los datos en JSON.
+  //Function dedicated to verify, from a database snap, if all the registers have been completed properly.
+  //This is one is called as a pre JSON parse of the data.
+  //return: Future<bool>
   Future<bool> _verificarDatosCompletos() async {
     bool _completo = true;
     List<DatosLlegada> list = await LlegadaDB.db.getLlegadas();
@@ -58,6 +63,7 @@ class CronometroState extends State<Cronometro> {
     return _completo;
   }
 
+  //
   void _setearLargada() async {
     setState(() {
       _horaLargadaMilli = _horaLargada.millisecondsSinceEpoch;
@@ -77,7 +83,7 @@ class CronometroState extends State<Cronometro> {
 
   void _moverArriba() {
     _controller.animateTo(_controller.offset + 100,
-        duration: Duration(milliseconds: 200), curve: Curves.easeIn);
+        duration: Duration(milliseconds: 250), curve: Curves.easeIn);
   }
 
   void _verificarHoraLargada() async {
@@ -108,20 +114,7 @@ class CronometroState extends State<Cronometro> {
     });
   }
 
-  Future<String> get _localPath async {
-    final directory = await getApplicationDocumentsDirectory();
-    print(directory.path);
-    return directory.path;
-  }
-
-  Future<File> get _localFile async {
-    //SimplePermissions.requestPermission(Permission.WriteExternalStorage);
-    final path = await _localPath;
-    return File('$path/json.txt');
-  }
-
   Future<String> pasarBDaJSON() async {
-    //final file = await _localFile;
     String s = '[';
     List<DatosLlegada> data = await LlegadaDB.db.getLlegadas();
     data.forEach((element) {
@@ -139,52 +132,9 @@ class CronometroState extends State<Cronometro> {
   }
 
   void _enviarDatos() async {
-    //bool _datos = await _verificarDatosCompletos();
-    //if (_datos) {
     String s = await pasarBDaJSON();
     Share.text('json', s, 'application/json');
-    /*} else {
-      showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Error'),
-              content: Text('No se pueden enviar datos incompletos'),
-              actions: <Widget>[
-                MaterialButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('OK'),
-                )
-              ],
-            );
-          });
-    }*/
   }
-
-  /*void startTimer() {
-    _horaActual = DateTime.now();
-    int _start = _horaLargada.difference(_horaActual).inSeconds + 1;
-    print(_start);
-    CountdownTimer countDownTimer = new CountdownTimer(
-      new Duration(seconds: _start),
-      new Duration(seconds: 1),
-    );
-
-    var sub = countDownTimer.listen(null);
-    sub.onData((duration) {
-      setState(() {
-        _currentTime = _start - duration.elapsed.inSeconds;
-        print(_currentTime);
-      });
-    });
-
-    sub.onDone(() {
-      dependencies.stopwatch.start();
-      sub.cancel();
-    });
-  }*/
 
   //Boton que controla Laps y Reinicio
   void leftButtonPressed() {
@@ -192,10 +142,8 @@ class CronometroState extends State<Cronometro> {
       if (_largadaSetted) {
         int dif = DateTime.now().difference(_horaLargada).inMilliseconds;
         _addLlegada(dif);
-        print("je");
-        print(dif);
+        print("Largada registrada con millis: $dif");
       } else {
-        //dependencies.stopwatch.reset();
         resetDB();
       }
     });
@@ -205,8 +153,8 @@ class CronometroState extends State<Cronometro> {
   void rightButtonPressed() {
     DatePicker.showTimePicker(context, showTitleActions: true,
         onChanged: (date) {
-      print('change $date in time zone ' +
-          date.timeZoneOffset.inHours.toString());
+      print('HORA ' + date.millisecondsSinceEpoch.toString());
+      //print('EPOCH '+ date.millisecondsSinceEpoch)
     }, onConfirm: (date) {
       setState(() {
         _horaLargada = date;
@@ -237,6 +185,7 @@ class CronometroState extends State<Cronometro> {
     setState(() {
       _indexGeneral += 1;
     });
+    print(MediaQuery.of(context).size.height);
     _moverArriba();
   }
 
@@ -266,7 +215,13 @@ class CronometroState extends State<Cronometro> {
 
   @override
   Widget build(BuildContext context) {
-    String _llegadaFormato = timeFormatter(_horaLargadaMilli - 10800000);
+    DateTime _fechaActual = DateTime.now();
+    int year = _fechaActual.year,
+        month = _fechaActual.month,
+        day = _fechaActual.day,
+        _fechaBase = DateTime.utc(year, month, day).millisecondsSinceEpoch;
+    String _llegadaFormato =
+        timeFormatter(_horaLargadaMilli - _fechaBase - 10800000);
     return new Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -348,38 +303,7 @@ class CronometroState extends State<Cronometro> {
                   heroTag: 'set',
                   label: Text('Setear arranque'),
                   onPressed: () {
-                    setState(() {
-                      //dependencies.stopwatch.start();
-                      showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: Text('Ingrese hora de inicio'),
-                              content: TimePickerSpinner(
-                                is24HourMode: true,
-                                isShowSeconds: true,
-                                onTimeChange: (time) {
-                                  setState(() {
-                                    _horaLargada = time;
-                                    _setearLargada();
-                                  });
-                                },
-                              ),
-                              actions: <Widget>[
-                                Padding(
-                                  child: MaterialButton(
-                                    child: Text('Aceptar'),
-                                    onPressed: () {
-                                      //startTimer();
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                  padding: EdgeInsets.symmetric(horizontal: 20),
-                                ),
-                              ],
-                            );
-                          });
-                    });
+                    rightButtonPressed();
                   },
                 ),
               ],
@@ -391,56 +315,11 @@ class CronometroState extends State<Cronometro> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              buildFloatingButton('Resetear todo', resetDB),
+              //buildFloatingButton('Resetear todo', resetDB),
               buildFloatingButton('Enviar datos', _enviarDatos),
             ],
           ),
         )
-      ],
-    );
-  }
-}
-
-class TimerText extends StatefulWidget {
-  TimerText({this.dependencies, this.largada});
-
-  final Dependencies dependencies;
-  final int largada;
-
-  TimerTextState createState() => new TimerTextState(
-      dependencies: dependencies, milliseconds: this.largada);
-}
-
-class TimerTextState extends State<TimerText> {
-  TimerTextState({this.dependencies, this.milliseconds});
-
-  final Dependencies dependencies;
-
-  //Timer timer;
-  int milliseconds;
-
-  @override
-  Widget build(BuildContext context) {
-    String minutesStr = (milliseconds % 60000).toString().padLeft(2, '0');
-    String secondsStr = (milliseconds % 1000).toString().padLeft(2, '0');
-    String hundredsStr = (milliseconds % 100).toString().padLeft(2, '0');
-    return new Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        new RepaintBoundary(
-          child: new SizedBox(
-              height: 100.0,
-              child: Text(
-                '$minutesStr:$secondsStr',
-                style: TextStyle(fontSize: 90),
-              )),
-        ),
-        new RepaintBoundary(
-          child: new SizedBox(
-            height: 100.0,
-            child: Text('$hundredsStr', style: TextStyle(fontSize: 90)),
-          ),
-        ),
       ],
     );
   }
