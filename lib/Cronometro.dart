@@ -7,6 +7,7 @@ import 'package:dxb_llegada/UpdateLlegada.dart';
 import 'package:dxb_llegada/database/db.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:after_layout/after_layout.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:flutter_time_picker_spinner/flutter_time_picker_spinner.dart';
@@ -39,7 +40,8 @@ class Cronometro extends StatefulWidget {
   CronometroState createState() => new CronometroState();
 }
 
-class CronometroState extends State<Cronometro> {
+class CronometroState extends State<Cronometro>
+    with AfterLayoutMixin<Cronometro> {
   final Dependencies dependencies = new Dependencies();
   int _indexGeneral = 0, _horaLargadaMilli = 0;
   DateTime _horaLargada;
@@ -76,9 +78,17 @@ class CronometroState extends State<Cronometro> {
 
   void initState() {
     super.initState();
-    _controller = new ScrollController();
+    _controller = new ScrollController(initialScrollOffset: 0.0);
     _obtenerIndex();
     _verificarHoraLargada();
+    //WidgetsBinding.instance.addPostFrameCallback((_) => _moverAbajo(context));
+  }
+
+  void _moverAbajo(var c) {
+    setState(() async {
+      await Future.delayed(Duration(milliseconds: 50));
+      _controller.jumpTo(0.0);
+    });
   }
 
   void _moverArriba() {
@@ -213,6 +223,59 @@ class CronometroState extends State<Cronometro> {
         onPressed: callback);
   }
 
+  Widget lista() {
+    return FutureBuilder<List<DatosLlegada>>(
+      future: LlegadaDB.db.getLlegadas(),
+      builder:
+          (BuildContext context, AsyncSnapshot<List<DatosLlegada>> snapshot) {
+        if (snapshot.hasData) {
+          return ListView.separated(
+            physics: BouncingScrollPhysics(),
+            reverse: false,
+            controller: _controller,
+            itemCount: snapshot.data.length,
+            itemBuilder: (BuildContext context, int index) {
+              DatosLlegada item = snapshot.data[index];
+              final tiempoFormatted = timeFormatter(item.tiempoLlegada);
+              String numEquipo = item.numEquipo == null
+                  ? "Falta Número de Equipo"
+                  : item.numEquipo.toString();
+              return ListTile(
+                leading: Icon(Icons.access_alarms),
+                title: Text('$tiempoFormatted - ' + numEquipo),
+                trailing: Icon(item.registrado == 0
+                    ? Icons.navigate_next
+                    : Icons.check_circle),
+                onTap: () async {
+                  if (item.registrado == 0) {
+                    await Navigator.of(context).push(MaterialPageRoute(
+                        builder: (BuildContext context) => LlegadaEdit(
+                            tileIndex: index,
+                            timeMilliseconds: item.tiempoLlegada,
+                            formattedTime: tiempoFormatted)));
+                  } else {
+                    await Navigator.of(context).push(MaterialPageRoute(
+                        builder: (BuildContext context) => UpdateLlegada(
+                              tileIndex: index,
+                              timeMilliseconds: item.tiempoLlegada,
+                              formattedTime: tiempoFormatted,
+                              numEquipo: item.numEquipo,
+                            )));
+                  }
+                },
+              );
+            },
+            separatorBuilder: (BuildContext context, index) {
+              return Divider();
+            },
+          );
+        } else {
+          return Center(child: CircularProgressIndicator());
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     DateTime _fechaActual = DateTime.now();
@@ -234,59 +297,7 @@ class CronometroState extends State<Cronometro> {
             ),
           ),
         ),
-        Flexible(
-          flex: 8,
-          child: FutureBuilder<List<DatosLlegada>>(
-            future: LlegadaDB.db.getLlegadas(),
-            builder: (BuildContext context,
-                AsyncSnapshot<List<DatosLlegada>> snapshot) {
-              if (snapshot.hasData) {
-                return ListView.separated(
-                  physics: BouncingScrollPhysics(),
-                  reverse: true,
-                  controller: _controller,
-                  itemCount: snapshot.data.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    DatosLlegada item = snapshot.data[index];
-                    final tiempoFormatted = timeFormatter(item.tiempoLlegada);
-                    String numEquipo = item.numEquipo == null
-                        ? "Falta Número de Equipo"
-                        : item.numEquipo.toString();
-                    return ListTile(
-                      leading: Icon(Icons.access_alarms),
-                      title: Text('$tiempoFormatted - ' + numEquipo),
-                      trailing: Icon(item.registrado == 0
-                          ? Icons.navigate_next
-                          : Icons.check_circle),
-                      onTap: () async {
-                        if (item.registrado == 0) {
-                          await Navigator.of(context).push(MaterialPageRoute(
-                              builder: (BuildContext context) => LlegadaEdit(
-                                  tileIndex: index,
-                                  timeMilliseconds: item.tiempoLlegada,
-                                  formattedTime: tiempoFormatted)));
-                        } else {
-                          await Navigator.of(context).push(MaterialPageRoute(
-                              builder: (BuildContext context) => UpdateLlegada(
-                                    tileIndex: index,
-                                    timeMilliseconds: item.tiempoLlegada,
-                                    formattedTime: tiempoFormatted,
-                                    numEquipo: item.numEquipo,
-                                  )));
-                        }
-                      },
-                    );
-                  },
-                  separatorBuilder: (BuildContext context, index) {
-                    return Divider();
-                  },
-                );
-              } else {
-                return Center(child: CircularProgressIndicator());
-              }
-            },
-          ),
-        ),
+        Flexible(flex: 8, child: lista()),
         new Flexible(
           flex: 1,
           child: new Padding(
@@ -322,5 +333,11 @@ class CronometroState extends State<Cronometro> {
         )
       ],
     );
+  }
+
+  @override
+  void afterFirstLayout(BuildContext context) {
+    _controller.jumpTo(0.0);
+    print(1);
   }
 }
