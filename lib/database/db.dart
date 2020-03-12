@@ -1,11 +1,11 @@
 import 'dart:io';
-import 'package:flutter/widgets.dart';
+
+import 'package:dxb_llegada/Models/Llegada.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite/sql.dart';
 import 'package:sqflite/sqlite_api.dart';
-import 'package:dxb_llegada/DatosLlegada.dart';
 
 class LlegadaDB {
   LlegadaDB._();
@@ -21,51 +21,51 @@ class LlegadaDB {
 
   Future<Database> getDatabaseInstance() async {
     Directory directory = await getApplicationDocumentsDirectory();
-    String path = join(directory.path, "llegadasss.db");
+    String path = join(directory.path, "llegadassss.db");
     return await openDatabase(path, version: 4,
         onCreate: (Database db, int version) async {
-      await db.execute("CREATE TABLE DatosLlegada ("
+      await db.execute("CREATE TABLE Llegada ("
           "id integer primary key unique,"
-          "numEquipo integer,"
-          "tiempoLlegada integer,"
+          "idPunto integer,"
+          "idUser integer,"
+          "numCorredor string,"
+          "tiempoLlegada string,"
           "registrado integer"
           ")");
     });
   }
 
   //Query
-  Future<List<DatosLlegada>> getLlegadas() async {
+  Future<List<Llegada>> getLlegadas() async {
     final db = await database;
-    var result = await db.query("DatosLlegada");
-    List<DatosLlegada> list =
-        result.map((c) => DatosLlegada.fromMap(c)).toList();
+    var result = await db.query("Llegada");
+    List<Llegada> list = result.map((c) => Llegada.fromMap(c)).toList();
     return list;
   }
 
   //Query
-  Future<DatosLlegada> getLlegada(int id) async {
+  Future<Llegada> getLlegada(int id) async {
     final db = await database;
-    var result =
-        await db.query("DatosLlegada", where: "id = ?", whereArgs: [id]);
-    return result.isNotEmpty ? DatosLlegada.fromMap(result.first) : null;
+    var result = await db.query("Llegada", where: "id = ?", whereArgs: [id]);
+    return result.isNotEmpty ? Llegada.fromMap(result.first) : null;
   }
 
 //Query
-  Future<DatosLlegada> getLlegadaByEquipo(int numEquipo) async {
+  Future<Llegada> getLlegadaByEquipo(int numCorredor) async {
     final db = await database;
     var result = await db
-        .query("DatosLlegada", where: "numEquipo = ?", whereArgs: [numEquipo]);
-    return result.isNotEmpty ? DatosLlegada.fromMap(result.first) : null;
+        .query("Llegada", where: "numCorredor = ?", whereArgs: [numCorredor]);
+    return result.isNotEmpty ? Llegada.fromMap(result.first) : null;
   }
 
   //Insert
-  addLlegada(DatosLlegada llegada) async {
+  addLlegada(Llegada llegada) async {
     final db = await database;
     /*var table = await db.rawQuery("SELECT MAX(id)+1 as id FROM Llegada");
     int id = table.first["id"];
     llegada.id = id;*/
     var raw = await db.insert(
-      "DatosLlegada",
+      "Llegada",
       llegada.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -76,29 +76,29 @@ class LlegadaDB {
   //Delete client with id
   deleteLlegada(int id) async {
     final db = await database;
-    return db.delete("DatosLlegada", where: "id = ?", whereArgs: [id]);
+    return db.delete("Llegada", where: "id = ?", whereArgs: [id]);
   }
 
   //Delete all clients
   resetDB() async {
     final db = await database;
-    db.delete("DatosLlegada");
+    db.delete("Llegada");
     //db.rawQuery("DROP TABLE DatosLlegada");
   }
 
 //Update
-  updateLlegada(int id, int numEquipo, int registrado) async {
+  updateLlegada(int id, int numCorredor, int registrado) async {
     final db = await database;
     var result = await db.update(
-        'DatosLlegada', {'numEquipo': numEquipo, 'registrado': registrado},
+        'Llegada', {'numCorredor': numCorredor, 'registrado': registrado},
         where: 'id = ?', whereArgs: [id]);
     return result;
   }
 
   //Update
-  updateEquipo(int id, int numEquipo) async {
+  updateEquipo(int id, int numCorredor) async {
     final db = await database;
-    var result = await db.update('DatosLlegada', {'numEquipo': numEquipo},
+    var result = await db.update('Llegada', {'numCorredor': numCorredor},
         where: 'id = ?', whereArgs: [id]);
     return result;
   }
@@ -107,7 +107,7 @@ class LlegadaDB {
   updateBolsas(int id, int bolsasCompletadas) async {
     final db = await database;
     var result = await db.update(
-        'DatosLlegada', {'bolsasCompletadas': bolsasCompletadas},
+        'Llegada', {'bolsasCompletadas': bolsasCompletadas},
         where: 'id = ?', whereArgs: [id]);
     return result;
   }
@@ -115,8 +115,7 @@ class LlegadaDB {
   //Update
   updateRespuestas(int id, int respuestas) async {
     final db = await database;
-    var result = await db.update(
-        'DatosLlegada', {'respuestasCorrectas': respuestas},
+    var result = await db.update('Llegada', {'respuestasCorrectas': respuestas},
         where: 'id = ?', whereArgs: [id]);
     return result;
   }

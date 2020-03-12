@@ -1,10 +1,9 @@
 import 'dart:convert';
 
-import 'package:dxb_llegada/Cronometro.dart';
+import 'package:dxb_llegada/Models/DatosLlegada.dart';
+import 'package:dxb_llegada/database/db.dart';
 import 'package:dxb_llegada/main.dart';
 import 'package:flutter/material.dart';
-import 'package:dxb_llegada/DatosLlegada.dart';
-import 'package:dxb_llegada/database/db.dart';
 
 class LlegadaEdit extends StatefulWidget {
   int tileIndex, timeMilliseconds;
