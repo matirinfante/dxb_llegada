@@ -1,16 +1,18 @@
+import 'package:dxb_llegada/Views/Companion/CronometroCompanion.dart';
 import 'package:dxb_llegada/database/db.dart';
 import 'package:dxb_llegada/main.dart';
 import 'package:flutter/material.dart';
 
+//TODO AGREGAR CAMPO RESPUESTAS CORRECTAS
 class UpdateLlegada extends StatefulWidget {
-  int tileIndex, timeMilliseconds, numEquipo;
+  int tileIndex, timeMilliseconds, numCorredor;
   String formattedTime;
 
   UpdateLlegada({
     this.tileIndex,
     this.timeMilliseconds,
     this.formattedTime,
-    this.numEquipo,
+    this.numCorredor,
   });
 
   @override
@@ -18,11 +20,11 @@ class UpdateLlegada extends StatefulWidget {
 }
 
 class _UpdateLlegadaState extends State<UpdateLlegada> {
-  int _numEquipo;
+  int _numCorredor;
 
   @override
   Widget build(BuildContext context) {
-    _numEquipo = widget.numEquipo;
+    _numCorredor = widget.numCorredor;
 
     return Scaffold(
       appBar: AppBar(
@@ -47,19 +49,19 @@ class _UpdateLlegadaState extends State<UpdateLlegada> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: <Widget>[
-                  Text('Número de Equipo:'),
+                  Text('Número de Corredor:'),
                   SizedBox(
                     width: 70,
                     child: TextField(
                       decoration: new InputDecoration.collapsed(
-                        hintText: '$_numEquipo',
+                        hintText: '$_numCorredor',
                       ),
                       keyboardType: TextInputType.numberWithOptions(),
                       onChanged: (value) async {
-                        if (await LlegadaDB.db.getLlegada(int.parse(value)) ==
+                        if (await LlegadaDB.db.getLlegadaByEquipo(value) ==
                             null) {
                           await LlegadaDB.db
-                              .updateEquipo(widget.tileIndex, int.parse(value));
+                              .updateEquipo(widget.tileIndex, value);
                         } else {}
                       },
                     ),
@@ -75,7 +77,8 @@ class _UpdateLlegadaState extends State<UpdateLlegada> {
                 onPressed: () {
                   Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(
-                          builder: (BuildContext context) => Crono()),
+                          builder: (BuildContext context) =>
+                              CronometroCompanion()),
                       (Route<dynamic> route) => false);
                 },
                 color: Colors.amber,

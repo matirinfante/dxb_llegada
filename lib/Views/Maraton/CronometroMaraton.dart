@@ -1,21 +1,21 @@
 import 'dart:async';
 import 'dart:convert';
-
-import 'package:dxb_llegada/Models/Llegada.dart';
+import 'package:dxb_llegada/Models/LlegadaMaraton.dart';
 import 'package:dxb_llegada/database/db.dart';
 import 'package:esys_flutter_share/esys_flutter_share.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class Cronometro extends StatefulWidget {
-  Cronometro({Key key}) : super(key: key);
+class CronometroMaraton extends StatefulWidget {
+  CronometroMaraton({Key key}) : super(key: key);
 
-  CronometroState createState() => new CronometroState();
+  CronometroMaratonState createState() => new CronometroMaratonState();
 }
 
-class CronometroState extends State<Cronometro> {
-  int _indexGeneral = 0, _horaLargadaMilli = 0, _idPunto = 0, _idUser = 0;
+class CronometroMaratonState extends State<CronometroMaraton> {
+  int _indexGeneral = 0, _horaLargadaMilli = 0;
+  String _idPunto = "0", _idUser = "0";
   bool _largadaSetted = false;
   ScrollController _controller;
   TextEditingController textEditingController;
@@ -28,7 +28,7 @@ class CronometroState extends State<Cronometro> {
   //return: Future<bool>
   Future<bool> _verificarDatosCompletos() async {
     bool _completo = true;
-    List<Llegada> list = await LlegadaDB.db.getLlegadas();
+    List<LlegadaMaraton> list = await LlegadaDB.db.getLlegadasMaraton();
     list.forEach((element) {
       if (element.registrado == 0) {
         _completo = false;
@@ -50,14 +50,14 @@ class CronometroState extends State<Cronometro> {
   }
 
   @override
-  void didUpdateWidget(Cronometro oldWidget) {
+  void didUpdateWidget(CronometroMaraton oldWidget) {
     super.didUpdateWidget(oldWidget);
     setState(() {});
   }
 
   //Funcion que obtiene el indice actual almacenado en la base de datos
   void _obtenerIndex() async {
-    List<Llegada> llegadas = await LlegadaDB.db.getLlegadas();
+    List<LlegadaMaraton> llegadas = await LlegadaDB.db.getLlegadasMaraton();
     setState(() {
       _indexGeneral = llegadas.length;
     });
@@ -65,7 +65,7 @@ class CronometroState extends State<Cronometro> {
 
   Future<String> pasarBDaJSON() async {
     String s = '[';
-    List<Llegada> data = await LlegadaDB.db.getLlegadas();
+    List<LlegadaMaraton> data = await LlegadaDB.db.getLlegadasMaraton();
     data.forEach((element) {
       if (element == data.last) {
         s += jsonEncode(element);
@@ -88,7 +88,7 @@ class CronometroState extends State<Cronometro> {
   //Boton que controla Parar e Inicio
   //Funcion que borra toda la tabla
   void resetDB() async {
-    await LlegadaDB.db.resetDB();
+    await LlegadaDB.db.dropLlegadaMaraton();
     var prefs = await SharedPreferences.getInstance();
     prefs.setInt('horaLargada', 0);
     setState(() {
@@ -100,18 +100,19 @@ class CronometroState extends State<Cronometro> {
 //Funcion que agrega una llegada a la base de datos e incrementa el indexGeneral
   void _addLlegada(String numCorredor) async {
     DateTime dateTime = DateTime.now();
-    var _llegadaARegistrar = new Llegada(
+    var _llegadaARegistrar = new LlegadaMaraton(
         id: _indexGeneral,
         idPunto: _idPunto,
         idUser: _idUser,
         tiempoLlegada: dateTime.toIso8601String(),
         numCorredor: numCorredor,
         registrado: 1);
-    await LlegadaDB.db.addLlegada(_llegadaARegistrar);
+    await LlegadaDB.db.addLlegadaMaraton(_llegadaARegistrar);
     setState(() {
       _indexGeneral += 1;
     });
     _moverArriba();
+    textEditingController.clear();
   }
 
 //Funcion que da formato HH:MM:SS:MS a un tiempo en milisegundos
@@ -127,9 +128,10 @@ class CronometroState extends State<Cronometro> {
   }
 
   Widget Lista() {
-    return FutureBuilder<List<Llegada>>(
-      future: LlegadaDB.db.getLlegadas(),
-      builder: (BuildContext context, AsyncSnapshot<List<Llegada>> snapshot) {
+    return FutureBuilder<List<LlegadaMaraton>>(
+      future: LlegadaDB.db.getLlegadasMaraton(),
+      builder:
+          (BuildContext context, AsyncSnapshot<List<LlegadaMaraton>> snapshot) {
         if (snapshot.hasData) {
           return ListView.separated(
             physics: BouncingScrollPhysics(),
@@ -137,7 +139,7 @@ class CronometroState extends State<Cronometro> {
             controller: _controller,
             itemCount: snapshot.data.length,
             itemBuilder: (BuildContext context, int index) {
-              Llegada item = snapshot.data[index];
+              LlegadaMaraton item = snapshot.data[index];
               String timestamp = item.tiempoLlegada;
               String numCorredor = item.numCorredor == null
                   ? "Falta Número de Equipo"
@@ -164,59 +166,54 @@ class CronometroState extends State<Cronometro> {
 
   @override
   Widget build(BuildContext context) {
-    return new Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Flexible(flex: 8, child: Lista()),
-        SizedBox(
-          height: 100,
-          width: MediaQuery.of(context).size.width,
-          child: TextField(
-            controller: textEditingController,
-            keyboardType: TextInputType.numberWithOptions(signed: false),
-            onChanged: (text) async {
-              setState(() {
-                text = textEditingController.text;
-              });
-            },
+    return Scaffold(
+      appBar: AppBar(),
+      body: new Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Flexible(flex: 8, child: Lista()),
+          SizedBox(
+            height: 100,
+            width: MediaQuery.of(context).size.width,
+            child: TextField(
+              controller: textEditingController,
+              keyboardType: TextInputType.numberWithOptions(signed: false),
+            ),
           ),
-        ),
-        SizedBox(
-          height: 200,
-          width: MediaQuery.of(context).size.width,
-          child: new Padding(
-              padding: const EdgeInsets.only(
-                top: 5.0,
-              ),
-              child: Column(
-                children: <Widget>[
-                  Expanded(
-                    flex: 3,
-                    child: MaterialButton(
-                      minWidth: MediaQuery.of(context).size.width,
-                      color: Colors.amber,
-                      onPressed: () {
-                        _addLlegada(textEditingController.text.toString());
-                        setState(() {
-                          textEditingController.text = null;
-                        });
-                      },
-                      child: Text("REGISTRAR"),
+          SizedBox(
+            height: 200,
+            width: MediaQuery.of(context).size.width,
+            child: new Padding(
+                padding: const EdgeInsets.only(
+                  top: 5.0,
+                ),
+                child: Column(
+                  children: <Widget>[
+                    Expanded(
+                      flex: 3,
+                      child: MaterialButton(
+                        minWidth: MediaQuery.of(context).size.width,
+                        color: Colors.amber,
+                        onPressed: () {
+                          _addLlegada(textEditingController.text);
+                        },
+                        child: Text("REGISTRAR"),
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: MaterialButton(
-                      minWidth: MediaQuery.of(context).size.width,
-                      color: Colors.deepOrangeAccent,
-                      onPressed: _enviarDatos,
-                      child: Text("ENVIAR DATOS"),
-                    ),
-                  )
-                ],
-              )),
-        ),
-      ],
+                    Expanded(
+                      flex: 1,
+                      child: MaterialButton(
+                        minWidth: MediaQuery.of(context).size.width,
+                        color: Colors.deepOrangeAccent,
+                        onPressed: _enviarDatos,
+                        child: Text("ENVIAR DATOS"),
+                      ),
+                    )
+                  ],
+                )),
+          ),
+        ],
+      ),
     );
   }
 }

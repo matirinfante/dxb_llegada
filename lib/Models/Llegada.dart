@@ -1,36 +1,32 @@
 class Llegada {
-  int id, idPunto, idUser, registrado;
-  String numCorredor, tiempoLlegada;
+  int id, registrado, tiempoLlegada, respuestasCorrectas;
+  String numCorredor;
 
   Llegada(
       {this.id,
-      this.idPunto,
-      this.idUser,
       this.numCorredor,
       this.tiempoLlegada,
+      this.respuestasCorrectas,
       this.registrado});
 
   Map<String, dynamic> toMap() => {
         "id": id,
-        "idPunto": idPunto,
-        "idUser": idUser,
         "numCorredor": numCorredor,
         "tiempoLlegada": tiempoLlegada,
+        "respuestasCorrectas": respuestasCorrectas,
         "registrado": registrado
       };
 
   factory Llegada.fromMap(Map<String, dynamic> json) => new Llegada(
       id: json["id"],
-      idPunto: json["idPunto"],
-      idUser: json["idUser"],
       numCorredor: json["numCorredor"],
       tiempoLlegada: json["tiempoLlegada"],
+      respuestasCorrectas: json["respuestasCorrectas"],
       registrado: json["registrado"]);
 
   Map<String, dynamic> toJson() => {
-        "idPunto": idPunto,
-        "idUser": idUser,
         "numCorredor": numCorredor,
         "tiempoLlegada": tiempoLlegada,
+        "respuestasCorrectas": respuestasCorrectas
       };
 }

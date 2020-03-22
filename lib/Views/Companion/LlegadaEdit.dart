@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:dxb_llegada/Models/DatosLlegada.dart';
+import 'package:dxb_llegada/Models/Llegada.dart';
+import 'package:dxb_llegada/Models/LlegadaMaraton.dart';
 import 'package:dxb_llegada/database/db.dart';
 import 'package:dxb_llegada/main.dart';
 import 'package:flutter/material.dart';
@@ -16,9 +17,10 @@ class LlegadaEdit extends StatefulWidget {
 }
 
 class _LlegadaEditState extends State<LlegadaEdit> {
-  DatosLlegada _datosLlegada;
-  int _numEquipo;
+  Llegada _datosLlegada;
+  String _numCorredor;
   bool _datosCargados = false;
+  int _respuestas;
 
   void initState() {
     _checkIfRegistered();
@@ -35,8 +37,8 @@ class _LlegadaEditState extends State<LlegadaEdit> {
   }
 
   _subirDatos() async {
-    if (_numEquipo != null) {
-      if (await LlegadaDB.db.getLlegadaByEquipo(_numEquipo) != null) {
+    if (_numCorredor != null) {
+      if (await LlegadaDB.db.getLlegadaByEquipo(_numCorredor) != null) {
         showDialog(
             context: context,
             builder: (BuildContext context) {
@@ -56,13 +58,14 @@ class _LlegadaEditState extends State<LlegadaEdit> {
               );
             });
       } else {
-        _datosLlegada = new DatosLlegada(
-            numEquipo: _numEquipo,
+        _datosLlegada = new Llegada(
+            numCorredor: _numCorredor,
             tiempoLlegada: widget.timeMilliseconds,
+            respuestasCorrectas: _respuestas,
             registrado: 1);
         String _json = jsonEncode(_datosLlegada);
         print(_json);
-        await LlegadaDB.db.updateLlegada(widget.tileIndex, _numEquipo, 1);
+        await LlegadaDB.db.updateLlegada(widget.tileIndex, _numCorredor, 1);
         setState(() {
           _datosCargados = true;
         });
@@ -114,13 +117,13 @@ class _LlegadaEditState extends State<LlegadaEdit> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: <Widget>[
-                  Text('Número de Equipo:'),
+                  Text('Número de Corredor:'),
                   SizedBox(
                     width: 70,
                     child: TextField(
                       keyboardType: TextInputType.numberWithOptions(),
                       onChanged: (value) async {
-                        _numEquipo = int.parse(value);
+                        _numCorredor = value;
                       },
                     ),
                   )
