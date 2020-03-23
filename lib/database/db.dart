@@ -37,7 +37,7 @@ class LlegadaDB {
           "id integer primary key unique,"
           "numCorredor string,"
           "tiempoLlegada string,"
-          "respuestasCorrectas int,"
+          "respuestasCorrectas integer,"
           "registrado integer"
           ");");
     });

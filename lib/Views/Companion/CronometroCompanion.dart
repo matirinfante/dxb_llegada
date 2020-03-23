@@ -10,10 +10,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-//TODO SOLO BOTON LLEGADA Y SUBIR DATOS
 //TODO DRAWER RESET
-//TODO TIEMPO ES TIMESTAMP STRING NO SE GUARDA EL TIEMPO DE LARGADA
-//TODO ACTUALIZAR NUEVO TIMEPICKER
 //TODO LIMPIAR CODIGO
 class CronometroCompanion extends StatefulWidget {
   CronometroCompanion({Key key}) : super(key: key);
@@ -22,56 +19,18 @@ class CronometroCompanion extends StatefulWidget {
 }
 
 class CronometroCompanionState extends State<CronometroCompanion> {
-  int _indexGeneral = 0, _horaLargadaMilli = 0, _currentTime = 0;
-  DateTime _horaActual, _horaLargada;
-  bool _largadaSetted = false;
+  int _indexGeneral = 0;
   ScrollController _controller;
-
-  Future<bool> _verificarDatosCompletos() async {
-    bool _completo = true;
-    List<Llegada> list = await LlegadaDB.db.getLlegadas();
-    list.forEach((element) {
-      if (element.registrado == 0) {
-        _completo = false;
-      }
-    });
-    return _completo;
-  }
-
-  void _setearLargada() async {
-    setState(() {
-      _horaLargadaMilli = _horaLargada.millisecondsSinceEpoch;
-      _largadaSetted = true;
-    });
-    var prefs = await SharedPreferences.getInstance();
-    prefs.setInt('horaLargada', _horaLargadaMilli);
-    print(_horaLargadaMilli);
-  }
 
   void initState() {
     super.initState();
     _controller = new ScrollController();
     _obtenerIndex();
-    _verificarHoraLargada();
   }
 
   void _moverArriba() {
     _controller.animateTo(_controller.offset + 100,
         duration: Duration(milliseconds: 200), curve: Curves.easeIn);
-  }
-
-  void _verificarHoraLargada() async {
-    var prefs = await SharedPreferences.getInstance();
-    setState(() {
-      int largada = prefs.getInt('horaLargada') ?? 0;
-      if (largada != 0) {
-        _horaLargadaMilli = largada;
-        _largadaSetted = true;
-        _horaLargada = DateTime.fromMillisecondsSinceEpoch(_horaLargadaMilli);
-      } else {
-        _horaLargada = DateTime.utc(2019);
-      }
-    });
   }
 
   @override
@@ -111,45 +70,6 @@ class CronometroCompanionState extends State<CronometroCompanion> {
     Share.text('json', s, 'application/json');
   }
 
-  //Boton que controla Laps y Reinicio
-  void leftButtonPressed() {
-    setState(() {
-      if (_largadaSetted) {
-        int dif = DateTime.now().difference(_horaLargada).inMilliseconds;
-        _addLlegada(dif);
-        print("je");
-        print(dif);
-      } else {
-        //dependencies.stopwatch.reset();
-        resetDB();
-      }
-    });
-  }
-
-  //Boton que controla Parar e Inicio
-  void rightButtonPressed() {
-    setState(() {
-      //dependencies.stopwatch.start();
-      showDialog(
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Ingrese hora de inicio'),
-              content: TimePickerSpinner(
-                is24HourMode: true,
-                isShowSeconds: false,
-                onTimeChange: (time) {
-                  setState(() {
-                    _horaLargada = time;
-                    _setearLargada();
-                  });
-                },
-              ),
-            );
-          },
-          context: context);
-    });
-  }
-
   //Funcion que borra toda la tabla
   void resetDB() async {
     await LlegadaDB.db.dropLlegada();
@@ -157,15 +77,15 @@ class CronometroCompanionState extends State<CronometroCompanion> {
     prefs.setInt('horaLargada', 0);
     setState(() {
       _indexGeneral = 0;
-      _horaLargadaMilli = 0;
     });
   }
 
   //Funcion que agrega una llegada a la base de datos e incrementa el indexGeneral
-  void _addLlegada(int ellapsedMilliseconds) async {
+  void _addLlegada() async {
+    String timestamp = DateTime.now().toIso8601String();
     var _llegadaARegistrar = new Llegada(
         id: _indexGeneral,
-        tiempoLlegada: ellapsedMilliseconds,
+        tiempoLlegada: timestamp,
         numCorredor: null,
         respuestasCorrectas: null,
         registrado: 0);
@@ -188,152 +108,100 @@ class CronometroCompanionState extends State<CronometroCompanion> {
     return formato + ':$milliseconds';
   }
 
-  //Se buildean los botones
-  Widget buildFloatingButton(String text, VoidCallback callback) {
-    return new FloatingActionButton.extended(
-        heroTag: text,
-        icon: Icon(Icons.label),
-        label: new Text(
-          text,
-          textAlign: TextAlign.center,
-        ),
-        onPressed: callback);
-  }
-
   @override
   Widget build(BuildContext context) {
-    String _llegadaFormato = timeFormatter(_horaLargadaMilli - 10800000);
-    return new Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        new Flexible(
-          flex: 2,
-          child: Center(
-            child: Text(
-              _llegadaFormato,
-              style: TextStyle(fontSize: 50),
-            ),
-          ),
-        ),
-        Flexible(
-          flex: 8,
-          child: FutureBuilder<List<Llegada>>(
-            future: LlegadaDB.db.getLlegadas(),
-            builder:
-                (BuildContext context, AsyncSnapshot<List<Llegada>> snapshot) {
-              if (snapshot.hasData) {
-                return ListView.separated(
-                  physics: BouncingScrollPhysics(),
-                  reverse: true,
-                  controller: _controller,
-                  itemCount: snapshot.data.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    Llegada item = snapshot.data[index];
-                    final tiempoFormatted = timeFormatter(item.tiempoLlegada);
-                    String numEquipo = item.numCorredor == null
-                        ? "Falta Número de Equipo"
-                        : item.numCorredor.toString();
-                    return ListTile(
-                      leading: Icon(Icons.access_alarms),
-                      title: Text('$tiempoFormatted - ' + numEquipo),
-                      trailing: Icon(item.registrado == 0
-                          ? Icons.navigate_next
-                          : Icons.check_circle),
-                      onTap: () async {
-                        if (item.registrado == 0) {
-                          await Navigator.of(context).push(MaterialPageRoute(
-                              builder: (BuildContext context) => LlegadaEdit(
-                                  tileIndex: index,
-                                  timeMilliseconds: item.tiempoLlegada,
-                                  formattedTime: tiempoFormatted)));
-                        } else {
-                          await Navigator.of(context).push(MaterialPageRoute(
-                              builder: (BuildContext context) => UpdateLlegada(
+    return Scaffold(
+      appBar: AppBar(),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Flexible(
+            flex: 8,
+            child: FutureBuilder<List<Llegada>>(
+              future: LlegadaDB.db.getLlegadas(),
+              builder: (BuildContext context,
+                  AsyncSnapshot<List<Llegada>> snapshot) {
+                if (snapshot.hasData) {
+                  return ListView.separated(
+                    physics: BouncingScrollPhysics(),
+                    reverse: true,
+                    controller: _controller,
+                    itemCount: snapshot.data.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      Llegada item = snapshot.data[index];
+                      final tiempoFormatted = item.tiempoLlegada;
+                      String numEquipo = item.numCorredor == null
+                          ? "Falta Número de Equipo"
+                          : item.numCorredor;
+                      return ListTile(
+                        leading: Icon(Icons.access_alarms),
+                        title: Text('$tiempoFormatted - ' + numEquipo),
+                        trailing: Icon(item.registrado == 0
+                            ? Icons.navigate_next
+                            : Icons.check_circle),
+                        onTap: () async {
+                          if (item.registrado == 0) {
+                            await Navigator.of(context).push(MaterialPageRoute(
+                                builder: (BuildContext context) => LlegadaEdit(
                                     tileIndex: index,
-                                    timeMilliseconds: item.tiempoLlegada,
-                                    formattedTime: tiempoFormatted,
-                                    respuestas: item.respuestasCorrectas,
-                                    numCorredor: item.numCorredor,
-                                  )));
-                        }
-                      },
-                    );
-                  },
-                  separatorBuilder: (BuildContext context, index) {
-                    return Divider();
-                  },
-                );
-              } else {
-                return Center(child: CircularProgressIndicator());
-              }
-            },
-          ),
-        ),
-        new Flexible(
-          flex: 1,
-          child: new Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: 5.0,
+                                    formattedTime: tiempoFormatted)));
+                          } else {
+                            await Navigator.of(context).push(MaterialPageRoute(
+                                builder: (BuildContext context) =>
+                                    UpdateLlegada(
+                                      tileIndex: index,
+                                      formattedTime: tiempoFormatted,
+                                      respuestas: item.respuestasCorrectas,
+                                      numCorredor: item.numCorredor,
+                                    )));
+                          }
+                        },
+                      );
+                    },
+                    separatorBuilder: (BuildContext context, index) {
+                      return Divider();
+                    },
+                  );
+                } else {
+                  return Center(child: CircularProgressIndicator());
+                }
+              },
             ),
-            child: new Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                buildFloatingButton(_largadaSetted ? "Llegada" : "Reiniciar",
-                    leftButtonPressed),
-                FloatingActionButton.extended(
-                  icon: Icon(Icons.timer),
-                  heroTag: 'set',
-                  label: Text('Setear arranque'),
-                  onPressed: () {
-                    setState(() {
-                      //dependencies.stopwatch.start();
-                      showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: Text('Ingrese hora de inicio'),
-                              content: TimePickerSpinner(
-                                is24HourMode: true,
-                                isShowSeconds: true,
-                                onTimeChange: (time) {
-                                  setState(() {
-                                    _horaLargada = time;
-                                    _setearLargada();
-                                  });
-                                },
-                              ),
-                              actions: <Widget>[
-                                Padding(
-                                  child: MaterialButton(
-                                    child: Text('Aceptar'),
-                                    onPressed: () {
-                                      //startTimer();
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                  padding: EdgeInsets.symmetric(horizontal: 20),
-                                ),
-                              ],
-                            );
-                          });
-                    });
-                  },
+          ),
+          SizedBox(
+            height: 200,
+            width: MediaQuery.of(context).size.width,
+            child: new Padding(
+                padding: const EdgeInsets.only(
+                  top: 5.0,
                 ),
-              ],
-            ),
+                child: Column(
+                  children: <Widget>[
+                    Expanded(
+                      flex: 3,
+                      child: MaterialButton(
+                        minWidth: MediaQuery.of(context).size.width,
+                        color: Colors.amber,
+                        onPressed: () {
+                          _addLlegada();
+                        },
+                        child: Text("REGISTRAR"),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: MaterialButton(
+                        minWidth: MediaQuery.of(context).size.width,
+                        color: Colors.deepOrangeAccent,
+                        onPressed: _enviarDatos,
+                        child: Text("ENVIAR DATOS"),
+                      ),
+                    )
+                  ],
+                )),
           ),
-        ),
-        Flexible(
-          flex: 1,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              buildFloatingButton('Resetear todo', resetDB),
-              buildFloatingButton('Enviar datos', _enviarDatos),
-            ],
-          ),
-        )
-      ],
+        ],
+      ),
     );
   }
 }

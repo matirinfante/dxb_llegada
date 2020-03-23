@@ -14,9 +14,8 @@ class CronometroMaraton extends StatefulWidget {
 }
 
 class CronometroMaratonState extends State<CronometroMaraton> {
-  int _indexGeneral = 0, _horaLargadaMilli = 0;
+  int _indexGeneral = 0;
   String _idPunto = "0", _idUser = "0";
-  bool _largadaSetted = false;
   ScrollController _controller;
   TextEditingController textEditingController;
 
@@ -93,7 +92,6 @@ class CronometroMaratonState extends State<CronometroMaraton> {
     prefs.setInt('horaLargada', 0);
     setState(() {
       _indexGeneral = 0;
-      _horaLargadaMilli = 0;
     });
   }
 
@@ -176,6 +174,8 @@ class CronometroMaratonState extends State<CronometroMaraton> {
             height: 100,
             width: MediaQuery.of(context).size.width,
             child: TextField(
+              decoration: new InputDecoration.collapsed(
+                  hintText: "Ingrese número de corredor/es"),
               controller: textEditingController,
               keyboardType: TextInputType.numberWithOptions(signed: false),
             ),

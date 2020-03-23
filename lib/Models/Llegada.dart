@@ -1,6 +1,6 @@
 class Llegada {
-  int id, registrado, tiempoLlegada, respuestasCorrectas;
-  String numCorredor;
+  int id, registrado, respuestasCorrectas;
+  String numCorredor, tiempoLlegada;
 
   Llegada(
       {this.id,

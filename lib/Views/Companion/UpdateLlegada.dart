@@ -1,17 +1,16 @@
 import 'package:dxb_llegada/Views/Companion/CronometroCompanion.dart';
 import 'package:dxb_llegada/database/db.dart';
-import 'package:dxb_llegada/main.dart';
 import 'package:flutter/material.dart';
 
 //TODO AGREGAR CAMPO RESPUESTAS CORRECTAS
 class UpdateLlegada extends StatefulWidget {
-  int tileIndex, timeMilliseconds, numCorredor;
-  String formattedTime;
+  int tileIndex, respuestas;
+  String formattedTime, numCorredor;
 
   UpdateLlegada({
     this.tileIndex,
-    this.timeMilliseconds,
     this.formattedTime,
+    this.respuestas,
     this.numCorredor,
   });
 
@@ -20,7 +19,7 @@ class UpdateLlegada extends StatefulWidget {
 }
 
 class _UpdateLlegadaState extends State<UpdateLlegada> {
-  int _numCorredor;
+  String _numCorredor;
 
   @override
   Widget build(BuildContext context) {

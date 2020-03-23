@@ -1,16 +1,15 @@
 import 'dart:convert';
 
 import 'package:dxb_llegada/Models/Llegada.dart';
-import 'package:dxb_llegada/Models/LlegadaMaraton.dart';
 import 'package:dxb_llegada/database/db.dart';
 import 'package:dxb_llegada/main.dart';
 import 'package:flutter/material.dart';
 
 class LlegadaEdit extends StatefulWidget {
-  int tileIndex, timeMilliseconds;
+  int tileIndex;
   String formattedTime;
 
-  LlegadaEdit({this.tileIndex, this.timeMilliseconds, this.formattedTime});
+  LlegadaEdit({this.tileIndex, this.formattedTime});
 
   @override
   _LlegadaEditState createState() => _LlegadaEditState();
@@ -60,7 +59,7 @@ class _LlegadaEditState extends State<LlegadaEdit> {
       } else {
         _datosLlegada = new Llegada(
             numCorredor: _numCorredor,
-            tiempoLlegada: widget.timeMilliseconds,
+            tiempoLlegada: widget.formattedTime,
             respuestasCorrectas: _respuestas,
             registrado: 1);
         String _json = jsonEncode(_datosLlegada);
