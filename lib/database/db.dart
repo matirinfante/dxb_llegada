@@ -22,21 +22,21 @@ class LlegadaDB {
 
   Future<Database> getDatabaseInstance() async {
     Directory directory = await getApplicationDocumentsDirectory();
-    String path = join(directory.path, "llegadasssss.db");
+    String path = join(directory.path, "llegadasssssssss.db");
     return await openDatabase(path, version: 4,
         onCreate: (Database db, int version) async {
       await db.execute("CREATE TABLE LlegadaMaraton ("
           "id integer primary key unique,"
           "idPunto integer,"
           "idUser integer,"
-          "numCorredor string,"
-          "tiempoLlegada string,"
+          "numCorredor text,"
+          "tiempoLlegada text,"
           "registrado integer"
-          ");"
-          "CREATE TABLE Llegada("
+          ");");
+      await db.execute("CREATE TABLE Llegada ("
           "id integer primary key unique,"
-          "numCorredor string,"
-          "tiempoLlegada string,"
+          "numCorredor text,"
+          "tiempoLlegada text,"
           "respuestasCorrectas integer,"
           "registrado integer"
           ");");

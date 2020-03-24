@@ -15,7 +15,7 @@ class CronometroMaraton extends StatefulWidget {
 
 class CronometroMaratonState extends State<CronometroMaraton> {
   int _indexGeneral = 0;
-  String _idPunto = "0", _idUser = "0";
+  int _idPunto = 0, _idUser = 0;
   ScrollController _controller;
   TextEditingController textEditingController;
 
@@ -170,14 +170,14 @@ class CronometroMaratonState extends State<CronometroMaraton> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Flexible(flex: 8, child: Lista()),
-          SizedBox(
-            height: 100,
+          Container(
             width: MediaQuery.of(context).size.width,
             child: TextField(
               decoration: new InputDecoration.collapsed(
                   hintText: "Ingrese número de corredor/es"),
               controller: textEditingController,
               keyboardType: TextInputType.numberWithOptions(signed: false),
+              style: TextStyle(fontSize: 25.0),
             ),
           ),
           SizedBox(

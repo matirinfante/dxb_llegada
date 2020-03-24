@@ -1,6 +1,6 @@
 class LlegadaMaraton {
-  int id, registrado;
-  String idPunto, idUser, numCorredor, tiempoLlegada;
+  int id, registrado, idPunto, idUser;
+  String numCorredor, tiempoLlegada;
 
   LlegadaMaraton(
       {this.id,
